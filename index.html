@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Asistencia</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f1f3f4;
+margin:0;
+transition:background 0.3s, color 0.3s;
+}
+
+body.modo-noche{
+background:#1a1a1a;
+color:#e0e0e0;
+}
+
+body.modo-noche .formulario,
+body.modo-noche .modal-contenido,
+body.modo-noche header{
+background:#2d2d2d;
+color:#e0e0e0;
+}
+
+body.modo-noche header h1{
+color:#ffffff;
+}
+
+body.modo-noche .estudiante{
+border-bottom:1px solid #444;
+}
+
+body.modo-noche .filtro-btn{
+background:#2d2d2d;
+color:#e0e0e0;
+border-color:#673ab7;
+}
+
+body.modo-noche .filtro-btn.activo{
+background:#673ab7;
+color:white;
+}
+
+body.modo-noche .tabla-informe{
+background:#2d2d2d;
+color:#e0e0e0;
+}
+
+body.modo-noche .tabla-informe th{
+background:#673ab7;
+}
+
+body.modo-noche .tabla-informe tr:nth-child(even){
+background:#3a3a3a;
+}
+
+body.modo-noche .form-estudiante{
+background:#3a3a3a;
+}
+
+body.modo-noche .item-estudiante-modificar{
+background:#2d2d2d;
+border-color:#444;
+}
+
+body.modo-noche .item-estudiante-modificar:hover{
+background:#3a3a3a;
+border-color:#673ab7;
+}
+
+body.modo-noche input,
+body.modo-noche select{
+background:#3a3a3a;
+color:#e0e0e0;
+border-color:#555;
+}
+
+.btn-modo{
+background:#ffc107;
+color:#000;
+border:none;
+padding:8px 15px;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+font-size:14px;
+margin-left:10px;
+transition:all 0.3s;
+}
+
+.btn-modo:hover{
+background:#ffb300;
+}
+
+body.modo-noche .btn-modo{
+background:#424242;
+color:#ffc107;
+}
+
+body.modo-noche .btn-modo:hover{
+background:#616161;
+}
+
+/* Mejoras para móvil */
+@media (max-width: 768px) {
+body {
+font-size: 14px;
+}
+
+.formulario {
+width: 95% !important;
+margin: 10px auto !important;
+padding: 15px !important;
+}
+
+.filtros-curso {
+gap: 5px !important;
+}
+
+.filtro-btn {
+padding: 8px 12px !important;
+font-size: 12px !important;
+min-width: auto !important;
+}
+
+.estudiante {
+padding: 10px !important;
+}
+
+.botones button {
+padding: 6px 12px !important;
+margin: 3px !important;
+font-size: 12px !important;
+}
+
+.ver-historial {
+padding: 4px 8px !important;
+font-size: 10px !important;
+}
+
+.guardar, .informe-btn {
+padding: 10px !important;
+font-size: 14px !important;
+}
+
+.modal-contenido {
+width: 95% !important;
+margin: 20px auto !important;
+padding: 15px !important;
+max-height: 90vh !important;
+}
+
+.tabla-informe {
+font-size: 12px !important;
+}
+
+.tabla-informe th, .tabla-informe td {
+padding: 8px 4px !important;
+}
+
+.informe-controles {
+flex-direction: column !important;
+gap: 10px !important;
+align-items: stretch !important;
+}
+
+.informe-controles > div {
+width: 100% !important;
+}
+
+.informe-controles input, .informe-controles select {
+width: 100% !important;
+box-sizing: border-box;
+}
+
+.rol-botones {
+flex-direction: column !important;
+gap: 10px !important;
+}
+
+.rol-btn {
+min-width: auto !important;
+}
+
+.login-box {
+width: 90% !important;
+padding: 20px !important;
+}
+
+header h1 {
+font-size: 18px !important;
+}
+
+header > div {
+position: relative !important;
+top: auto !important;
+right: auto !important;
+margin-top: 10px !important;
+justify-content: center !important;
+}
+
+#rol-usuario {
+font-size: 12px !important;
+padding: 6px 10px !important;
+}
+}
+
+header{
+background:white;
+padding:20px;
+box-shadow:0 2px 5px rgba(0,0,0,0.2);
+text-align:center;
+position:relative;
+}
+
+h1{
+color:#202124;
+margin:0;
+font-size:24px;
+}
+
+.formulario{
+width:600px;
+margin:30px auto;
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+}
+
+.estudiante{
+border-bottom:1px solid #eee;
+padding:15px;
+}
+
+.botones button{
+
+margin:5px;
+padding:8px 15px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-weight:bold;
+opacity:0.3;
+transition:all 0.3s;
+}
+
+.botones button.activo{
+opacity:1;
+transform:scale(1.15);
+box-shadow:0 0 15px rgba(0,0,0,0.4);
+}
+
+.botones button:hover{
+opacity:0.6;
+}
+
+.P{background:#34a853;color:white;}
+.A{background:#fbbc05;color:white;}
+.L{background:#4285f4;color:white;}
+.F{background:#ea4335;color:white;}
+
+.guardar{
+margin-top:20px;
+width:100%;
+padding:12px;
+font-size:16px;
+background:#673ab7;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+
+.ver-historial{
+background:#607d8b;
+color:white;
+padding:5px 10px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-left:10px;
+font-size:12px;
+}
+
+.btn-modificar{
+background:#ff9800;
+color:white;
+padding:5px 10px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-left:5px;
+font-size:12px;
+}
+
+.btn-modificar:hover{
+background:#f57c00;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+z-index:1000;
+}
+
+.modal-contenido{
+background:white;
+width:80%;
+max-width:600px;
+margin:50px auto;
+padding:30px;
+border-radius:10px;
+max-height:80vh;
+overflow-y:auto;
+}
+
+.cerrar{
+float:right;
+font-size:28px;
+font-weight:bold;
+cursor:pointer;
+color:#999;
+}
+
+.historial-item{
+padding:10px;
+border-bottom:1px solid #eee;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.historial-item .botones{
+display:flex;
+gap:5px;
+}
+
+.estado-badge{
+padding:5px 10px;
+border-radius:5px;
+color:white;
+font-weight:bold;
+}
+
+.filtros-curso{
+display:flex;
+gap:10px;
+margin-bottom:20px;
+flex-wrap:wrap;
+}
+
+.filtro-btn{
+padding:10px 15px;
+border:2px solid #673ab7;
+background:white;
+color:#673ab7;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+transition:all 0.3s;
+}
+
+.filtro-btn.activo{
+background:#673ab7;
+color:white;
+}
+
+.filtro-btn:hover{
+transform:scale(1.05);
+}
+
+.btn-pdf{
+background:#d32f2f;
+color:white;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin:10px 0;
+font-size:14px;
+}
+
+.btn-pdf:hover{
+background:#b71c1c;
+}
+
+.informe-btn{
+margin-top:10px;
+width:100%;
+padding:12px;
+font-size:16px;
+background:#ff9800;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.informe-btn:hover{
+background:#f57c00;
+}
+
+.informe-controles{
+display:flex;
+gap:10px;
+margin:20px 0;
+flex-wrap:wrap;
+align-items:center;
+}
+
+.informe-controles label{
+font-weight:bold;
+}
+
+.informe-controles input,
+.informe-controles select{
+padding:8px;
+border:1px solid #ddd;
+border-radius:5px;
+}
+
+.btn-buscar{
+background:#2196f3;
+color:white;
+padding:8px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.btn-exportar{
+background:#4caf50;
+color:white;
+padding:8px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.btn-excel{
+background:#217346;
+color:white;
+padding:8px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.btn-excel:hover{
+background:#1a5c37;
+}
+
+
+
+.btn-lista-oficial{
+background:#9c27b0;
+color:white;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin:15px 0;
+width:100%;
+font-size:14px;
+}
+
+.btn-lista-oficial:hover{
+background:#7b1fa2;
+}
+
+.gestion-estudiantes{
+display:flex;
+gap:10px;
+margin:15px 0;
+flex-wrap:wrap;
+}
+
+.btn-gestion{
+flex:1;
+min-width:150px;
+padding:10px 15px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+font-size:14px;
+transition:all 0.3s;
+}
+
+.btn-agregar-estudiante{
+background:#4caf50;
+color:white;
+}
+
+.btn-agregar-estudiante:hover{
+background:#45a049;
+}
+
+.btn-modificar-estudiante{
+background:#ff9800;
+color:white;
+}
+
+.btn-modificar-estudiante:hover{
+background:#f57c00;
+}
+
+.btn-eliminar-estudiante{
+background:#f44336;
+color:white;
+}
+
+.btn-eliminar-estudiante:hover{
+background:#da190b;
+}
+
+.form-estudiante{
+background:#f9f9f9;
+padding:20px;
+border-radius:8px;
+margin:15px 0;
+}
+
+.form-estudiante label{
+display:block;
+margin:10px 0 5px 0;
+font-weight:bold;
+}
+
+.form-estudiante input,
+.form-estudiante select{
+width:100%;
+padding:10px;
+border:1px solid #ddd;
+border-radius:5px;
+font-size:14px;
+box-sizing:border-box;
+}
+
+.form-estudiante button{
+margin-top:15px;
+padding:10px 20px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+font-size:14px;
+}
+
+.btn-guardar-estudiante{
+background:#4caf50;
+color:white;
+margin-right:10px;
+}
+
+.btn-guardar-estudiante:hover{
+background:#45a049;
+}
+
+.btn-cancelar{
+background:#999;
+color:white;
+}
+
+.btn-cancelar:hover{
+background:#777;
+}
+
+.lista-estudiantes-modificar{
+max-height:400px;
+overflow-y:auto;
+}
+
+.item-estudiante-modificar{
+padding:10px;
+border:1px solid #ddd;
+border-radius:5px;
+margin:10px 0;
+cursor:pointer;
+transition:all 0.3s;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.item-estudiante-modificar:hover{
+background:#e3f2fd;
+border-color:#2196f3;
+}
+
+.tabla-informe{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+.tabla-informe th,
+.tabla-informe td{
+border:1px solid #ddd;
+padding:12px;
+text-align:left;
+}
+
+.tabla-informe th{
+background:#673ab7;
+color:white;
+}
+
+.tabla-informe tr:nth-child(even){
+background:#f9f9f9;
+}
+
+.resumen-informe{
+background:#e3f2fd;
+padding:15px;
+border-radius:8px;
+margin-bottom:20px;
+}
+
+.resumen-informe h3{
+margin-top:0;
+color:#1976d2;
+}
+
+.login-container{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+
+.login-box{
+background:white;
+padding:40px;
+border-radius:15px;
+box-shadow:0 10px 40px rgba(0,0,0,0.3);
+text-align:center;
+width:350px;
+}
+
+.login-box h2{
+color:#673ab7;
+margin-bottom:30px;
+}
+
+.login-box input{
+width:100%;
+padding:15px;
+font-size:24px;
+text-align:center;
+border:2px solid #ddd;
+border-radius:8px;
+margin-bottom:20px;
+letter-spacing:5px;
+}
+
+.login-box input:focus{
+outline:none;
+border-color:#673ab7;
+}
+
+.login-box button{
+width:100%;
+padding:15px;
+background:#673ab7;
+color:white;
+border:none;
+border-radius:8px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.login-box button:hover{
+background:#5e35b1;
+}
+
+.rol-botones{
+display:flex;
+gap:15px;
+margin-bottom:20px;
+flex-wrap:wrap;
+}
+
+.rol-btn{
+flex:1;
+min-width:120px;
+padding:15px;
+border:3px solid #ddd;
+background:white;
+border-radius:10px;
+cursor:pointer;
+font-size:16px;
+font-weight:bold;
+transition:all 0.3s;
+color:#666;
+}
+
+.rol-btn:hover{
+border-color:#673ab7;
+transform:scale(1.05);
+}
+
+.rol-btn.seleccionado{
+border-color:#673ab7;
+background:#673ab7;
+color:white;
+}
+
+.rol-btn .icono-rol{
+filter:grayscale(100%) brightness(1.5);
+transition:all 0.3s;
+}
+
+.rol-btn.seleccionado .icono-rol{
+filter:grayscale(0%) brightness(1.2);
+}
+
+.login-error{
+color:#f44336;
+margin-top:10px;
+font-size:14px;
+}
+
+.app-container{
+display:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="login-container" class="login-container">
+<div class="login-box">
+<h2>🔐 ACCESO AL SISTEMA DE ASISTENCIA SEXTO A B C</h2>
+<p>SELECCIONE SU ROL</p>
+<div class="rol-botones">
+<button class="rol-btn" onclick="seleccionarRol('profesor')">
+<div class="icono-rol" style="font-size:32px;">👨‍🏫</div>
+Profesor
+</button>
+<button class="rol-btn" onclick="seleccionarRol('asesor')">
+<div class="icono-rol" style="font-size:32px;">👔</div>
+Asesor
+</button>
+<button class="rol-btn" onclick="seleccionarRol('padre')">
+<div class="icono-rol" style="font-size:32px;">👨‍👩‍👧‍👦</div>
+Padre/Madre
+</button>
+</div>
+<p>Ingrese el código de acceso</p>
+<input type="password" id="codigo-acceso" placeholder="••••" maxlength="4">
+<button onclick="verificarAcceso()">Ingresar</button>
+<p id="login-error" class="login-error"></p>
+</div>
+</div>
+
+<div id="app-container" class="app-container">
+
+<header>
+<h1 style="text-align:center;">REGISTRO DE BTH SISTEMAS INFORMÁTICOS SEXTOS</h1>
+<div style="position:absolute;top:50%;left:20px;transform:translateY(-50%);">
+<button id="btn-modo-tema" class="btn-modo" onclick="cambiarModoTema()" style="display:none;">🌙 Modo Noche</button>
+</div>
+<div style="position:absolute;top:50%;right:20px;transform:translateY(-50%);display:flex;gap:10px;align-items:center;">
+<button id="btn-drive" onclick="abrirDrive()" style="background:#4285f4;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;display:none;">📁 HISTORIAL</button>
+<span id="rol-usuario" style="background:#2196f3;color:white;padding:8px 15px;border-radius:5px;font-size:14px;"></span>
+<button onclick="cerrarSesion()" style="background:#f44336;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">🚪 Salir</button>
+</div>
+</header>
+
+<div id="seccion-registro">
+
+<div class="formulario">
+
+<div class="filtros-curso">
+<button class="filtro-btn" onclick="filtrarCurso('A')">CURSO A</button>
+<button class="filtro-btn" onclick="filtrarCurso('B')">CURSO B</button>
+<button class="filtro-btn" onclick="filtrarCurso('C')">CURSO C</button>
+<button class="filtro-btn" style="background:#f44336;color:white;border-color:#f44336;" onclick="volverSeleccion()">🔄 Cambiar Curso</button>
+</div>
+
+<label>Fecha:</label>
+<input type="date" id="fecha">
+
+<div id="lista"></div>
+
+<button class="guardar" onclick="guardar()">Guardar Asistencia</button>
+<button class="informe-btn" onclick="abrirInforme()">📊 Informe Diario</button>
+<button class="informe-btn" style="background:#9c27b0;" onclick="abrirInformeMensual()">📅 Informe Mensual</button>
+
+</div>
+
+</div>
+
+<div id="modal" class="modal">
+<div class="modal-contenido">
+<span class="cerrar" onclick="cerrarModal()">&times;</span>
+<h2 id="modal-titulo"></h2>
+<button class="btn-pdf" onclick="descargarPDF()">📄 Descargar PDF</button>
+<div id="modal-historial"></div>
+</div>
+</div>
+
+<div id="modal-informe" class="modal">
+<div class="modal-contenido">
+<span class="cerrar" onclick="cerrarInforme()">&times;</span>
+<h2>Informe Diario de Asistencia - SEXTO</h2>
+<div class="informe-controles">
+<label>Fecha:</label>
+<input type="date" id="informe-fecha">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+<label style="font-weight:bold;">Cursos:</label>
+<label style="font-weight:normal;"><input type="checkbox" value="A" class="curso-checkbox" checked> A</label>
+<label style="font-weight:normal;"><input type="checkbox" value="B" class="curso-checkbox" checked> B</label>
+<label style="font-weight:normal;"><input type="checkbox" value="C" class="curso-checkbox" checked> C</label>
+</div>
+<button class="btn-buscar" onclick="generarInforme()">🔍 Buscar</button>
+<button class="btn-exportar" onclick="exportarInforme()">📥 Exportar PDF</button>
+</div>
+<div id="informe-contenido"></div>
+</div>
+</div>
+
+<div id="modal-mensual" class="modal">
+<div class="modal-contenido" style="max-width:90%;">
+<span class="cerrar" onclick="cerrarInformeMensual()">&times;</span>
+<h2>Informe Mensual de Asistencia</h2>
+<div class="informe-controles">
+<label>Fecha Inicio:</label>
+<input type="date" id="mensual-inicio">
+<label>Fecha Fin:</label>
+<input type="date" id="mensual-fin">
+<label>Curso:</label>
+<select id="mensual-curso">
+<option value="">Seleccionar curso</option>
+<option value="A">CURSO A</option>
+<option value="B">CURSO B</option>
+<option value="C">CURSO C</option>
+</select>
+<button class="btn-buscar" onclick="generarInformeMensual()">🔍 Buscar</button>
+<button class="btn-exportar" onclick="exportarInformeMensual()">📥 Exportar PDF</button>
+<button class="btn-excel" onclick="exportarMensualExcel()">📊 Exportar Excel</button>
+</div>
+<div id="mensual-contenido"></div>
+</div>
+</div>
+
+<div id="modal-edicion" class="modal">
+<div class="modal-contenido">
+<span class="cerrar" onclick="cerrarModalEdicion()">&times;</span>
+<h2 id="edicion-titulo"></h2>
+<p style="color:#666;margin-bottom:20px;">Selecciona un estado para editar la asistencia de cada fecha</p>
+<div id="edicion-contenido"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+
+const supabaseUrl="https://xnotnspzbvicownuaqxg.supabase.co";
+const supabaseKey="sb_publishable_4T7OO9hz6K-eef2JNXRKuA_IAmsbj1a";
+
+const { createClient } = supabase;
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Códigos de acceso por rol
+const codigosProfesor = ["1234", "5678"];
+const codigosAsesor = ["9999", "0000"];
+const codigosPadres = ["1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888"];
+
+let rolUsuario = null; // 'profesor', 'asesor' o 'padre'
+let rolSeleccionado = null; // rol seleccionado en login
+let estudianteAsignado = null; // para padres
+let estudiantes=[];
+let asistencia={};
+let cursoActual=null;
+
+function seleccionarRol(rol){
+rolSeleccionado = rol;
+document.querySelectorAll('.rol-btn').forEach(btn => btn.classList.remove('seleccionado'));
+event.target.closest('.rol-btn').classList.add('seleccionado');
+document.getElementById("login-error").textContent = "";
+}
+
+function verificarAcceso(){
+const codigo = document.getElementById("codigo-acceso").value;
+const errorMsg = document.getElementById("login-error");
+
+if(!rolSeleccionado){
+errorMsg.textContent = "❌ Por favor selecciona un rol";
+return;
+}
+
+if(!codigo){
+errorMsg.textContent = "❌ Por favor ingresa el código";
+return;
+}
+
+// Verificar que el código corresponda al rol seleccionado
+if(rolSeleccionado === 'profesor' && codigosProfesor.includes(codigo)){
+rolUsuario = 'profesor';
+document.getElementById("login-container").style.display = "none";
+document.getElementById("app-container").style.display = "block";
+document.getElementById("rol-usuario").textContent = "Profesor";
+// Mostrar botón de modo tema para profesores
+document.getElementById("btn-modo-tema").style.display = "inline-block";
+// Mostrar botón de Drive para profesores
+document.getElementById("btn-drive").style.display = "inline-block";
+cargar();
+} else if(rolSeleccionado === 'asesor' && codigosAsesor.includes(codigo)){
+rolUsuario = 'asesor';
+document.getElementById("login-container").style.display = "none";
+document.getElementById("app-container").style.display = "block";
+document.getElementById("rol-usuario").textContent = "Asesor (Solo lectura)";
+// Mostrar botón de Drive para asesores
+document.getElementById("btn-drive").style.display = "inline-block";
+aplicarRestriccionesAsesor();
+cargar();
+} else if(rolSeleccionado === 'padre' && codigosPadres.includes(codigo)){
+rolUsuario = 'padre';
+// Mostrar selector de estudiante
+mostrarSelectorEstudiante();
+} else {
+errorMsg.textContent = "❌ Código incorrecto para el rol seleccionado";
+document.getElementById("codigo-acceso").value = "";
+document.getElementById("codigo-acceso").focus();
+}
+}
+
+async function mostrarSelectorEstudiante(){
+// Cargar estudiantes primero
+const {data} = await supabaseClient.from("estudiantes").select("*").order("nombre");
+estudiantes = data;
+
+// Mostrar modal para ingresar nombre del estudiante
+let html = `
+<div style="background:white;padding:20px;border-radius:10px;max-width:90%;width:400px;margin:20px auto;">
+<h2 style="font-size:20px;margin-bottom:15px;">Acceso para Padres</h2>
+<p style="margin-bottom:15px;">Ingresa el nombre completo del estudiante:</p>
+<input type="text" id="buscar-estudiante" placeholder="Nombre del estudiante..." style="width:100%;padding:12px;font-size:16px;border:2px solid #ddd;border-radius:8px;margin-bottom:15px;box-sizing:border-box;" autofocus>
+<div id="sugerencias-estudiantes" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:10px;display:none;margin-bottom:15px;background:#f9f9f9;">
+</div>
+<button onclick="buscarEstudiante()" style="width:100%;padding:12px;background:#673ab7;color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold;touch-action:manipulation;">Ingresar</button>
+<p id="error-busqueda" style="color:#f44336;margin-top:10px;text-align:center;font-size:14px;"></p>
+</div>
+`;
+
+document.getElementById("login-container").innerHTML = html;
+
+// Agregar funcionalidad de búsqueda con sugerencias
+document.getElementById("buscar-estudiante").addEventListener('input', function(e){
+const busqueda = e.target.value.toLowerCase().trim();
+const sugerenciasDiv = document.getElementById("sugerencias-estudiantes");
+
+if(busqueda.length < 2){
+sugerenciasDiv.style.display = "none";
+return;
+}
+
+const filtrados = estudiantes.filter(est => est.nombre.toLowerCase().includes(busqueda));
+
+if(filtrados.length > 0){
+sugerenciasDiv.style.display = "block";
+sugerenciasDiv.innerHTML = "";
+filtrados.slice(0, 5).forEach(est => {
+const div = document.createElement('div');
+div.style.padding = "10px";
+div.style.cursor = "pointer";
+div.style.borderBottom = "1px solid #ddd";
+div.style.transition = "background 0.2s";
+div.innerHTML = `<strong>${est.nombre}</strong> <span style="color:#999;">(Curso ${est.curso})</span>`;
+div.addEventListener('mouseover', function(){ this.style.background = '#e3f2fd'; });
+div.addEventListener('mouseout', function(){ this.style.background = 'transparent'; });
+div.addEventListener('click', function(){ seleccionarEstudiante(est.id, est.nombre, est.curso); });
+sugerenciasDiv.appendChild(div);
+});
+} else {
+sugerenciasDiv.style.display = "none";
+}
+});
+
+// Permitir enter para buscar
+document.getElementById("buscar-estudiante").addEventListener('keypress', function(e){
+if(e.key === 'Enter'){
+buscarEstudiante();
+}
+});
+}
+
+function buscarEstudiante(){
+const nombreBuscado = document.getElementById("buscar-estudiante").value.trim().toLowerCase();
+const errorDiv = document.getElementById("error-busqueda");
+
+if(!nombreBuscado){
+errorDiv.textContent = "Por favor ingresa un nombre";
+return;
+}
+
+const estudianteEncontrado = estudiantes.find(est => 
+est.nombre.toLowerCase() === nombreBuscado
+);
+
+if(estudianteEncontrado){
+seleccionarEstudiante(estudianteEncontrado.id, estudianteEncontrado.nombre, estudianteEncontrado.curso);
+} else {
+errorDiv.textContent = "Estudiante no encontrado. Verifica el nombre completo.";
+}
+}
+
+function seleccionarEstudiante(id, nombre, curso){
+estudianteAsignado = {id, nombre, curso};
+document.getElementById("login-container").style.display = "none";
+document.getElementById("app-container").style.display = "block";
+document.getElementById("rol-usuario").textContent = `Padre/Madre - ${nombre}`;
+aplicarRestriccionesPadre();
+mostrarVistaPadre();
+}
+
+function aplicarRestriccionesAsesor(){
+// Ocultar solo los botones de guardar y el campo de fecha para asesores
+document.getElementById("fecha").disabled = true;
+document.querySelector('.guardar').style.display = "none";
+}
+
+function aplicarRestriccionesPadre(){
+// Ocultar toda la sección de registro para padres
+document.getElementById("seccion-registro").style.display = "none";
+}
+
+async function mostrarVistaPadre(){
+const {data: asistenciaData} = await supabaseClient
+.from("asistencia")
+.select("*")
+.eq("estudiante_id", estudianteAsignado.id)
+.order("fecha", {ascending: false})
+.limit(10);
+
+let html = `
+<div style="max-width:800px;margin:30px auto;background:white;padding:30px;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.2);">
+<h2>Información del Estudiante</h2>
+<div style="background:#e3f2fd;padding:20px;border-radius:8px;margin-bottom:20px;">
+<p><strong>Nombre:</strong> ${estudianteAsignado.nombre}</p>
+<p><strong>Curso:</strong> ${estudianteAsignado.curso}</p>
+</div>
+
+<h3>Últimos 10 Registros de Asistencia</h3>
+<table class="tabla-informe">
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+if(asistenciaData.length === 0){
+html += '<tr><td colspan="2">No hay registros de asistencia</td></tr>';
+} else {
+asistenciaData.forEach(registro => {
+let colorEstado = "";
+let textoEstado = "";
+if(registro.estado === "P") { colorEstado = "#34a853"; textoEstado = "Presente"; }
+if(registro.estado === "A") { colorEstado = "#fbbc05"; textoEstado = "Atraso"; }
+if(registro.estado === "L") { colorEstado = "#4285f4"; textoEstado = "Licencia"; }
+if(registro.estado === "F") { colorEstado = "#ea4335"; textoEstado = "Falta"; }
+
+const [year, month, day] = registro.fecha.split('-');
+const fechaFormateada = `${day}/${month}/${year}`;
+
+html += `<tr>
+<td>${fechaFormateada}</td>
+<td style="background:${colorEstado};color:white;font-weight:bold;text-align:center;">${textoEstado}</td>
+</tr>`;
+});
+}
+
+html += `</tbody></table>
+<button onclick="verHistorialCompleto()" style="margin-top:20px;width:100%;padding:12px;background:#673ab7;color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold;">Ver Historial Completo</button>
+</div>
+`;
+
+document.getElementById("app-container").innerHTML = `
+<header>
+<h1 style="text-align:center;">REGISTRO DE BTH SISTEMAS INFORMÁTICOS SEXTOS</h1>
+<div style="position:absolute;top:50%;right:20px;transform:translateY(-50%);display:flex;gap:10px;align-items:center;">
+<span id="rol-usuario" style="background:#2196f3;color:white;padding:8px 15px;border-radius:5px;font-size:14px;">${document.getElementById("rol-usuario").textContent}</span>
+<button onclick="cerrarSesion()" style="background:#f44336;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">🚪 Salir</button>
+</div>
+</header>
+${html}
+`;
+}
+
+function verHistorialCompleto(){
+verHistorial(estudianteAsignado.id, estudianteAsignado.nombre);
+}
+
+function abrirDrive(){
+// URL de la carpeta de Google Drive (reemplazar con la URL real)
+const urlDrive = "https://drive.google.com/drive/folders/1ajdFNsU8s9AqDEuTcn8EJHHYEVfsq1F6?usp=sharing";
+window.open(urlDrive, '_blank');
+}
+
+function cerrarSesion(){
+// Restaurar el HTML original del login
+document.getElementById("login-container").innerHTML = `
+<div class="login-box">
+<h2>🔐 ACCESO AL SISTEMA DE ASISTENCIA SEXTO A B C</h2>
+<p>SELECCIONE SU ROL</p>
+<div class="rol-botones">
+<button class="rol-btn" onclick="seleccionarRol('profesor')">
+<div class="icono-rol" style="font-size:32px;">👨‍🏫</div>
+Profesor
+</button>
+<button class="rol-btn" onclick="seleccionarRol('asesor')">
+<div class="icono-rol" style="font-size:32px;">👔</div>
+Asesor
+</button>
+<button class="rol-btn" onclick="seleccionarRol('padre')">
+<div class="icono-rol" style="font-size:32px;">👨‍👩‍👧‍👦</div>
+Padre/Madre
+</button>
+</div>
+<p>Ingrese el código de acceso</p>
+<input type="password" id="codigo-acceso" placeholder="••••" maxlength="4">
+<button onclick="verificarAcceso()">Ingresar</button>
+<p id="login-error" class="login-error"></p>
+</div>
+`;
+
+document.getElementById("login-container").style.display = "flex";
+document.getElementById("app-container").style.display = "none";
+rolUsuario = null;
+rolSeleccionado = null;
+estudianteAsignado = null;
+// Restaurar visibilidad y funcionalidad
+if(document.getElementById("seccion-registro")){
+document.getElementById("seccion-registro").style.display = "block";
+}
+if(document.getElementById("fecha")){
+document.getElementById("fecha").disabled = false;
+}
+if(document.querySelector('.guardar')){
+document.querySelector('.guardar').style.display = "block";
+}
+// Recargar la página para restaurar estructura original
+location.reload();
+}
+
+// Permitir enter para ingresar
+document.addEventListener('DOMContentLoaded', function(){
+document.getElementById("codigo-acceso").addEventListener('keypress', function(e){
+if(e.key === 'Enter'){
+verificarAcceso();
+}
+});
+});
+
+async function cargar(){
+
+const {data}=await supabaseClient
+.from("estudiantes")
+.select("*");
+
+estudiantes=data;
+
+// No mostrar estudiantes al inicio
+document.getElementById("lista").innerHTML = "<p style='text-align:center;color:#999;padding:20px;'>Selecciona un curso para ver los estudiantes</p>";
+
+}
+
+function mostrarEstudiantes(){
+
+const lista=document.getElementById("lista");
+lista.innerHTML="";
+
+if(!cursoActual){
+lista.innerHTML = "<p style='text-align:center;color:#999;padding:20px;'>Selecciona un curso para ver los estudiantes</p>";
+return;
+}
+
+let estudiantesFiltrados = estudiantes.filter(est => est.curso === cursoActual);
+
+if(estudiantesFiltrados.length === 0){
+lista.innerHTML = "<p style='text-align:center;color:#999;padding:20px;'>No hay estudiantes en este curso</p>";
+return;
+}
+
+// Agregar botón de Lista Oficial para profesores y asesores
+if(rolUsuario === 'profesor' || rolUsuario === 'asesor'){
+const btnListaOficial = document.createElement("button");
+btnListaOficial.className = "btn-lista-oficial";
+btnListaOficial.innerHTML = "📋 Lista Oficial del Curso " + cursoActual;
+btnListaOficial.onclick = function(){ generarListaOficial(cursoActual); };
+lista.appendChild(btnListaOficial);
+}
+
+// Agregar botones de gestión de estudiantes solo para profesores
+if(rolUsuario === 'profesor'){
+const divGestion = document.createElement("div");
+divGestion.className = "gestion-estudiantes";
+divGestion.innerHTML = `
+<button class="btn-gestion btn-agregar-estudiante" onclick="mostrarFormAgregarEstudiante()">➕ Agregar Estudiante</button>
+<button class="btn-gestion btn-modificar-estudiante" onclick="mostrarFormModificarEstudiante()">✏️ Modificar Estudiante</button>
+<button class="btn-gestion btn-eliminar-estudiante" onclick="mostrarFormEliminarEstudiante()">�️ Eliminar Estudiante</button>
+`;
+lista.appendChild(divGestion);
+
+// Contenedor para formularios
+const divFormulario = document.createElement("div");
+divFormulario.id = "contenedor-formulario-estudiante";
+lista.appendChild(divFormulario);
+}
+
+estudiantesFiltrados.forEach(est=>{
+
+let div=document.createElement("div");
+div.className="estudiante";
+
+// Si es asesor, no mostrar botones de asistencia
+if(rolUsuario === 'asesor'){
+div.innerHTML=`
+<strong>${est.nombre}</strong> <span style="color:#999;font-size:12px;">(Curso ${est.curso})</span>
+<button class="ver-historial" onclick="verHistorial(${est.id}, \`${est.nombre.replace(/`/g, '')}\`)">📋 Historial</button>
+`;
+} else {
+// Mostrar botón de modificar solo para profesores
+let botonModificar = rolUsuario === 'profesor' ? `<button class="btn-modificar" onclick="abrirModalEdicion(${est.id}, \`${est.nombre.replace(/`/g, '')}\`)">✏️ Modificar</button>` : '';
+
+div.innerHTML=`
+<strong>${est.nombre}</strong> <span style="color:#999;font-size:12px;">(Curso ${est.curso})</span>
+<button class="ver-historial" onclick="verHistorial(${est.id}, \`${est.nombre.replace(/`/g, '')}\`)">📋 Historial</button>
+${botonModificar}
+
+<div class="botones" id="botones-${est.id}">
+
+<button class="P" onclick="marcar(${est.id},'P')">P</button>
+<button class="A" onclick="marcar(${est.id},'A')">A</button>
+<button class="L" onclick="marcar(${est.id},'L')">L</button>
+<button class="F" onclick="marcar(${est.id},'F')">F</button>
+
+</div>
+`;
+}
+
+lista.appendChild(div);
+
+});
+
+}
+
+function filtrarCurso(curso){
+
+cursoActual = curso;
+
+document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('activo'));
+event.target.classList.add('activo');
+
+mostrarEstudiantes();
+
+}
+
+function volverSeleccion(){
+
+if(rolUsuario === 'asesor'){
+// Asesor puede cambiar de curso para ver
+cursoActual = null;
+document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('activo'));
+document.getElementById("lista").innerHTML = "<p style='text-align:center;color:#999;padding:20px;'>Selecciona un curso para ver los estudiantes</p>";
+return;
+}
+
+cursoActual = null;
+asistencia = {};
+
+document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('activo'));
+document.getElementById("lista").innerHTML = "<p style='text-align:center;color:#999;padding:20px;'>Selecciona un curso para ver los estudiantes</p>";
+
+}
+
+function marcar(id,estado){
+
+if(rolUsuario === 'asesor'){
+alert("No tienes permisos para marcar asistencia");
+return;
+}
+
+asistencia[id]=estado;
+
+const botones=document.querySelectorAll(`#botones-${id} button`);
+botones.forEach(btn=>btn.classList.remove('activo'));
+
+const botonActivo=document.querySelector(`#botones-${id} .${estado}`);
+botonActivo.classList.add('activo');
+
+}
+
+async function guardar(){
+
+if(rolUsuario === 'asesor'){
+alert("No tienes permisos para guardar asistencia");
+return;
+}
+
+let fecha=document.getElementById("fecha").value;
+
+if(!fecha){
+alert("Por favor selecciona una fecha");
+return;
+}
+
+if(!cursoActual){
+alert("Por favor selecciona un curso");
+return;
+}
+
+let estudiantesAGuardar = [];
+
+for(let id in asistencia){
+let estudiante = estudiantes.find(est => est.id == id);
+if(estudiante.curso === cursoActual){
+estudiantesAGuardar.push(id);
+}
+}
+
+if(estudiantesAGuardar.length === 0){
+alert("No hay asistencia marcada para guardar");
+return;
+}
+
+// Verificar si ya existe asistencia para esta fecha y estos estudiantes
+const {data: registrosExistentes} = await supabaseClient
+.from("asistencia")
+.select("estudiante_id")
+.eq("fecha", fecha)
+.in("estudiante_id", estudiantesAGuardar);
+
+if(registrosExistentes && registrosExistentes.length > 0){
+alert(`Fecha registrada: Ya existe asistencia para la fecha ${fecha}. No se puede registrar dos veces.`);
+return;
+}
+
+for(let id of estudiantesAGuardar){
+await supabaseClient
+.from("asistencia")
+.insert({
+estudiante_id:id,
+fecha:fecha,
+estado:asistencia[id]
+});
+}
+
+alert(`Asistencia guardada para ${estudiantesAGuardar.length} estudiante(s)`);
+
+asistencia = {};
+document.querySelectorAll('.botones button').forEach(btn => btn.classList.remove('activo'));
+
+}
+
+async function verHistorial(id, nombre){
+
+const {data} = await supabaseClient
+.from("asistencia")
+.select("*")
+.eq("estudiante_id", id)
+.order("fecha", {ascending: false});
+
+window.historialActual = {nombre: nombre, data: data};
+
+document.getElementById("modal-titulo").textContent = `Historial de ${nombre}`;
+
+const historialDiv = document.getElementById("modal-historial");
+historialDiv.innerHTML = "";
+
+if(data.length === 0){
+historialDiv.innerHTML = "<p>No hay registros de asistencia</p>";
+} else {
+data.forEach(registro => {
+let colorEstado = "";
+if(registro.estado === "P") colorEstado = "#34a853";
+if(registro.estado === "A") colorEstado = "#fbbc05";
+if(registro.estado === "L") colorEstado = "#4285f4";
+if(registro.estado === "F") colorEstado = "#ea4335";
+
+historialDiv.innerHTML += `
+<div class="historial-item">
+<span>${registro.fecha}</span>
+<span class="estado-badge" style="background:${colorEstado}">${registro.estado}</span>
+</div>
+`;
+});
+}
+
+document.getElementById("modal").style.display = "block";
+
+}
+
+function descargarPDF(){
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+const {nombre, data} = window.historialActual;
+
+doc.setFontSize(18);
+doc.text(`Historial de Asistencia`, 20, 20);
+doc.setFontSize(14);
+doc.text(`Estudiante: ${nombre}`, 20, 30);
+
+doc.setFontSize(12);
+let y = 45;
+
+if(data.length === 0){
+doc.text("No hay registros de asistencia", 20, y);
+} else {
+doc.text("Fecha", 20, y);
+doc.text("Estado", 80, y);
+y += 10;
+
+data.forEach(registro => {
+let estadoTexto = "";
+if(registro.estado === "P") estadoTexto = "Presente";
+if(registro.estado === "A") estadoTexto = "Atraso";
+if(registro.estado === "L") estadoTexto = "Licencia";
+if(registro.estado === "F") estadoTexto = "Falta";
+
+doc.text(registro.fecha, 20, y);
+doc.text(estadoTexto, 80, y);
+y += 8;
+
+if(y > 280){
+doc.addPage();
+y = 20;
+}
+});
+}
+
+doc.save(`Historial_${nombre}.pdf`);
+
+}
+
+function cerrarModal(){
+document.getElementById("modal").style.display = "none";
+}
+
+function abrirInforme(){
+document.getElementById("modal-informe").style.display = "block";
+document.getElementById("informe-fecha").value = new Date().toISOString().split('T')[0];
+}
+
+function cerrarInforme(){
+document.getElementById("modal-informe").style.display = "none";
+}
+
+async function generarInforme(){
+
+const fecha = document.getElementById("informe-fecha").value;
+const cursosSeleccionados = Array.from(document.querySelectorAll('.curso-checkbox:checked')).map(cb => cb.value);
+
+if(!fecha){
+alert("Por favor selecciona una fecha");
+return;
+}
+
+if(cursosSeleccionados.length === 0){
+alert("Por favor selecciona al menos un curso");
+return;
+}
+
+// Obtener asistencia de la fecha
+const {data: asistenciaData} = await supabaseClient
+.from("asistencia")
+.select("*, estudiantes(*)")
+.eq("fecha", fecha);
+
+if(!asistenciaData || asistenciaData.length === 0){
+document.getElementById("informe-contenido").innerHTML = "<p>No hay registros de asistencia para esta fecha</p>";
+return;
+}
+
+// Filtrar por cursos seleccionados
+let asistenciaFiltrada = asistenciaData.filter(a => cursosSeleccionados.includes(a.estudiantes.curso));
+
+if(asistenciaFiltrada.length === 0){
+document.getElementById("informe-contenido").innerHTML = "<p>No hay registros para los cursos seleccionados en esta fecha</p>";
+return;
+}
+
+// Separar por estado
+let presentes = asistenciaFiltrada.filter(a => a.estado === 'P');
+let atrasos = asistenciaFiltrada.filter(a => a.estado === 'A');
+let licencias = asistenciaFiltrada.filter(a => a.estado === 'L');
+let faltas = asistenciaFiltrada.filter(a => a.estado === 'F');
+
+const cursosTexto = cursosSeleccionados.length === 6 ? 'Todos los cursos' : 'Cursos: ' + cursosSeleccionados.join(', ');
+
+// Formatear fecha a dd/mm/yyyy
+const [year, month, day] = fecha.split('-');
+const fechaFormateada = `${day}/${month}/${year}`;
+
+// Generar HTML del informe
+let html = `
+<div class="resumen-informe">
+<h3>Resumen del ${fechaFormateada} - ${cursosTexto}</h3>
+<p><strong>Total estudiantes:</strong> ${asistenciaFiltrada.length}</p>
+<p><strong>Presentes:</strong> ${presentes.length} | <strong>Atrasos:</strong> ${atrasos.length} | <strong>Licencias:</strong> ${licencias.length} | <strong>Faltas:</strong> ${faltas.length}</p>
+</div>
+
+<h3>Estudiantes con Atraso (A)</h3>
+<table class="tabla-informe">
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Curso</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+if(atrasos.length === 0){
+html += '<tr><td colspan="3">No hay estudiantes con atraso</td></tr>';
+} else {
+atrasos.forEach(a => {
+html += `<tr><td>${a.estudiantes.nombre}</td><td>${a.estudiantes.curso}</td><td style="background:#fbbc05;color:white;font-weight:bold;">A</td></tr>`;
+});
+}
+
+html += `</tbody></table>
+
+<h3>Estudiantes con Falta (F)</h3>
+<table class="tabla-informe">
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Curso</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+if(faltas.length === 0){
+html += '<tr><td colspan="3">No hay estudiantes con falta</td></tr>';
+} else {
+faltas.forEach(a => {
+html += `<tr><td>${a.estudiantes.nombre}</td><td>${a.estudiantes.curso}</td><td style="background:#ea4335;color:white;font-weight:bold;">F</td></tr>`;
+});
+}
+
+html += `</tbody></table>
+
+<h3>Estudiantes con Licencia (L)</h3>
+<table class="tabla-informe">
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Curso</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+if(licencias.length === 0){
+html += '<tr><td colspan="3">No hay estudiantes con licencia</td></tr>';
+} else {
+licencias.forEach(a => {
+html += `<tr><td>${a.estudiantes.nombre}</td><td>${a.estudiantes.curso}</td><td style="background:#4285f4;color:white;font-weight:bold;">L</td></tr>`;
+});
+}
+
+html += '</tbody></table>';
+
+document.getElementById("informe-contenido").innerHTML = html;
+
+window.informeActual = {fecha, fechaFormateada, cursosSeleccionados, cursosTexto, asistenciaFiltrada, atrasos, faltas, licencias, presentes};
+
+}
+
+async function exportarInforme(){
+
+if(!window.informeActual){
+alert("Primero genera un informe");
+return;
+}
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+const {fecha, fechaFormateada, cursosTexto, asistenciaFiltrada, atrasos, faltas, licencias, presentes} = window.informeActual;
+
+doc.setFontSize(16);
+doc.text("Informe Diario de Asistencia - SEXTO", 20, 20);
+doc.setFontSize(12);
+doc.text(`Fecha: ${fechaFormateada}`, 20, 30);
+doc.text(`${cursosTexto}`, 20, 37);
+
+doc.setFontSize(11);
+doc.text(`Total: ${asistenciaFiltrada.length} | Presentes: ${presentes.length} | Atrasos: ${atrasos.length} | Licencias: ${licencias.length} | Faltas: ${faltas.length}`, 20, 47);
+
+let y = 60;
+
+// Atrasos
+doc.setFontSize(13);
+doc.text("Estudiantes con Atraso (A)", 20, y);
+y += 7;
+doc.setFontSize(10);
+
+if(atrasos.length === 0){
+doc.text("No hay estudiantes con atraso", 20, y);
+y += 7;
+} else {
+atrasos.forEach(a => {
+doc.text(`${a.estudiantes.nombre} - Curso ${a.estudiantes.curso}`, 20, y);
+y += 6;
+if(y > 280){
+doc.addPage();
+y = 20;
+}
+});
+}
+
+y += 5;
+
+// Faltas
+doc.setFontSize(13);
+doc.text("Estudiantes con Falta (F)", 20, y);
+y += 7;
+doc.setFontSize(10);
+
+if(faltas.length === 0){
+doc.text("No hay estudiantes con falta", 20, y);
+y += 7;
+} else {
+faltas.forEach(a => {
+doc.text(`${a.estudiantes.nombre} - Curso ${a.estudiantes.curso}`, 20, y);
+y += 6;
+if(y > 280){
+doc.addPage();
+y = 20;
+}
+});
+}
+
+y += 5;
+
+// Licencias
+doc.setFontSize(13);
+doc.text("Estudiantes con Licencia (L)", 20, y);
+y += 7;
+doc.setFontSize(10);
+
+if(licencias.length === 0){
+doc.text("No hay estudiantes con licencia", 20, y);
+} else {
+licencias.forEach(a => {
+doc.text(`${a.estudiantes.nombre} - Curso ${a.estudiantes.curso}`, 20, y);
+y += 6;
+if(y > 280){
+doc.addPage();
+y = 20;
+}
+});
+}
+
+const cursosNombre = window.informeActual.cursosSeleccionados.join('_');
+doc.save(`Informe_${fecha}_${cursosNombre}.pdf`);
+
+}
+
+function abrirInformeMensual(){
+document.getElementById("modal-mensual").style.display = "block";
+const hoy = new Date();
+const hace1Mes = new Date();
+hace1Mes.setMonth(hoy.getMonth() - 1);
+document.getElementById("mensual-inicio").value = hace1Mes.toISOString().split('T')[0];
+document.getElementById("mensual-fin").value = hoy.toISOString().split('T')[0];
+}
+
+function cerrarInformeMensual(){
+document.getElementById("modal-mensual").style.display = "none";
+}
+
+async function generarInformeMensual(){
+
+const fechaInicio = document.getElementById("mensual-inicio").value;
+const fechaFin = document.getElementById("mensual-fin").value;
+const curso = document.getElementById("mensual-curso").value;
+
+if(!fechaInicio || !fechaFin){
+alert("Por favor selecciona las fechas de inicio y fin");
+return;
+}
+
+if(!curso){
+alert("Por favor selecciona un curso");
+return;
+}
+
+// Obtener estudiantes del curso
+const {data: estudiantesCurso} = await supabaseClient
+.from("estudiantes")
+.select("*")
+.eq("curso", curso)
+.order("nombre");
+
+if(!estudiantesCurso || estudiantesCurso.length === 0){
+document.getElementById("mensual-contenido").innerHTML = "<p>No hay estudiantes en este curso</p>";
+return;
+}
+
+// Obtener asistencia del periodo
+const {data: asistenciaData} = await supabaseClient
+.from("asistencia")
+.select("*")
+.gte("fecha", fechaInicio)
+.lte("fecha", fechaFin)
+.in("estudiante_id", estudiantesCurso.map(e => e.id))
+.order("fecha");
+
+// Obtener fechas únicas ordenadas
+let fechasUnicas = [...new Set(asistenciaData.map(a => a.fecha))].sort();
+
+// Crear matriz de asistencia por estudiante y fecha
+let matrizAsistencia = {};
+estudiantesCurso.forEach(est => {
+matrizAsistencia[est.id] = {
+nombre: est.nombre,
+fechas: {}
+};
+fechasUnicas.forEach(fecha => {
+let registro = asistenciaData.find(a => a.estudiante_id === est.id && a.fecha === fecha);
+matrizAsistencia[est.id].fechas[fecha] = registro ? registro.estado : '-';
+});
+});
+
+// Procesar datos por estudiante para resumen
+let datosEstudiantes = [];
+
+estudiantesCurso.forEach(estudiante => {
+let registros = asistenciaData.filter(a => a.estudiante_id === estudiante.id);
+let presentes = registros.filter(r => r.estado === 'P').length;
+let atrasos = registros.filter(r => r.estado === 'A').length;
+let licencias = registros.filter(r => r.estado === 'L').length;
+let faltas = registros.filter(r => r.estado === 'F').length;
+let total = registros.length;
+
+datosEstudiantes.push({
+id: estudiante.id,
+nombre: estudiante.nombre,
+presentes,
+atrasos,
+licencias,
+faltas,
+total,
+porcentajeAsistencia: total > 0 ? ((presentes / total) * 100).toFixed(1) : 0
+});
+});
+
+// Generar HTML con tabla detallada
+let html = `
+<div class="resumen-informe">
+<h3>Informe Mensual - Curso ${curso}</h3>
+<p><strong>Periodo:</strong> ${fechaInicio} al ${fechaFin}</p>
+<p><strong>Total estudiantes:</strong> ${estudiantesCurso.length} | <strong>Fechas registradas:</strong> ${fechasUnicas.length}</p>
+</div>
+
+<h3>Historial Detallado por Fecha</h3>
+<div style="overflow-x:auto;">
+<table class="tabla-informe">
+<thead>
+<tr>
+<th style="position:sticky;left:0;background:#673ab7;z-index:10;">Estudiante</th>
+`;
+
+// Agregar columnas de fechas
+fechasUnicas.forEach(fecha => {
+html += `<th style="min-width:60px;">${fecha}</th>`;
+});
+
+html += `
+</tr>
+</thead>
+<tbody>
+`;
+
+// Agregar filas de estudiantes con sus asistencias por fecha
+estudiantesCurso.forEach(est => {
+html += `<tr><td style="position:sticky;left:0;background:white;font-weight:bold;z-index:5;">${est.nombre}</td>`;
+fechasUnicas.forEach(fecha => {
+let estado = matrizAsistencia[est.id].fechas[fecha];
+let colorFondo = '';
+let colorTexto = 'black';
+if(estado === 'P') { colorFondo = '#e8f5e9'; colorTexto = '#2e7d32'; }
+else if(estado === 'A') { colorFondo = '#fff3e0'; colorTexto = '#e65100'; }
+else if(estado === 'L') { colorFondo = '#e3f2fd'; colorTexto = '#1565c0'; }
+else if(estado === 'F') { colorFondo = '#ffebee'; colorTexto = '#c62828'; }
+else { colorFondo = '#f5f5f5'; colorTexto = '#999'; }
+html += `<td style="background:${colorFondo};color:${colorTexto};font-weight:bold;text-align:center;">${estado}</td>`;
+});
+html += `</tr>`;
+});
+
+html += `
+</tbody>
+</table>
+</div>
+
+<h3 style="margin-top:30px;">Resumen de Asistencia</h3>
+<table class="tabla-informe">
+<thead>
+<tr>
+<th>Estudiante</th>
+<th>Presentes (P)</th>
+<th>Atrasos (A)</th>
+<th>Licencias (L)</th>
+<th>Faltas (F)</th>
+<th>Total Días</th>
+<th>% Asistencia</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+datosEstudiantes.forEach(est => {
+let colorAsistencia = est.porcentajeAsistencia >= 80 ? '#4caf50' : est.porcentajeAsistencia >= 60 ? '#ff9800' : '#f44336';
+html += `
+<tr>
+<td><strong>${est.nombre}</strong></td>
+<td style="background:#e8f5e9;">${est.presentes}</td>
+<td style="background:#fff3e0;">${est.atrasos}</td>
+<td style="background:#e3f2fd;">${est.licencias}</td>
+<td style="background:#ffebee;">${est.faltas}</td>
+<td>${est.total}</td>
+<td style="background:${colorAsistencia};color:white;font-weight:bold;">${est.porcentajeAsistencia}%</td>
+</tr>
+`;
+});
+
+html += '</tbody></table>';
+
+document.getElementById("mensual-contenido").innerHTML = html;
+
+window.mensualActual = {fechaInicio, fechaFin, curso, datosEstudiantes, fechasUnicas, matrizAsistencia, estudiantesCurso};
+
+}
+
+async function exportarInformeMensual(){
+
+if(!window.mensualActual){
+alert("Primero genera un informe mensual");
+return;
+}
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF('landscape');
+
+const {fechaInicio, fechaFin, curso, datosEstudiantes, fechasUnicas, matrizAsistencia, estudiantesCurso} = window.mensualActual;
+
+doc.setFontSize(16);
+doc.text("Informe Mensual de Asistencia", 20, 20);
+doc.setFontSize(12);
+doc.text(`Curso: ${curso}`, 20, 30);
+doc.text(`Periodo: ${fechaInicio} al ${fechaFin}`, 20, 37);
+doc.text(`Total estudiantes: ${datosEstudiantes.length} | Fechas registradas: ${fechasUnicas.length}`, 20, 44);
+
+let y = 55;
+
+// TABLA DETALLADA POR FECHA
+doc.setFontSize(14);
+doc.text("Historial Detallado por Fecha", 20, y);
+y += 10;
+
+doc.setFontSize(8);
+
+// Calcular cuántas fechas caben por página (máximo 20 fechas por página)
+const fechasPorPagina = 20;
+let totalPaginas = Math.ceil(fechasUnicas.length / fechasPorPagina);
+
+for(let pagina = 0; pagina < totalPaginas; pagina++){
+if(pagina > 0){
+doc.addPage('landscape');
+y = 20;
+}
+
+let fechasPagina = fechasUnicas.slice(pagina * fechasPorPagina, (pagina + 1) * fechasPorPagina);
+
+// Encabezados
+doc.text("Estudiante", 20, y);
+let xFecha = 80;
+fechasPagina.forEach(fecha => {
+doc.text(fecha.substring(5), xFecha, y); // Solo mes-día
+xFecha += 10;
+});
+y += 5;
+
+// Datos de estudiantes
+estudiantesCurso.forEach(est => {
+if(y > 185){
+doc.addPage('landscape');
+y = 20;
+// Repetir encabezados
+doc.text("Estudiante", 20, y);
+xFecha = 80;
+fechasPagina.forEach(fecha => {
+doc.text(fecha.substring(5), xFecha, y);
+xFecha += 10;
+});
+y += 5;
+}
+
+doc.text(est.nombre.substring(0, 25), 20, y);
+xFecha = 82;
+fechasPagina.forEach(fecha => {
+let estado = matrizAsistencia[est.id].fechas[fecha];
+doc.text(estado, xFecha, y);
+xFecha += 10;
+});
+y += 5;
+});
+}
+
+// TABLA RESUMEN
+doc.addPage('landscape');
+y = 20;
+
+doc.setFontSize(14);
+doc.text("Resumen de Asistencia", 20, y);
+y += 10;
+
+doc.setFontSize(10);
+doc.text("Estudiante", 20, y);
+doc.text("Presentes", 120, y);
+doc.text("Atrasos", 155, y);
+doc.text("Licencias", 190, y);
+doc.text("Faltas", 225, y);
+doc.text("Total", 255, y);
+doc.text("% Asist.", 275, y);
+
+y += 7;
+
+datosEstudiantes.forEach(est => {
+if(y > 190){
+doc.addPage('landscape');
+y = 20;
+// Repetir encabezados
+doc.setFontSize(10);
+doc.text("Estudiante", 20, y);
+doc.text("Presentes", 120, y);
+doc.text("Atrasos", 155, y);
+doc.text("Licencias", 190, y);
+doc.text("Faltas", 225, y);
+doc.text("Total", 255, y);
+doc.text("% Asist.", 275, y);
+y += 7;
+}
+
+doc.text(est.nombre.substring(0, 40), 20, y);
+doc.text(est.presentes.toString(), 130, y);
+doc.text(est.atrasos.toString(), 165, y);
+doc.text(est.licencias.toString(), 200, y);
+doc.text(est.faltas.toString(), 232, y);
+doc.text(est.total.toString(), 260, y);
+doc.text(est.porcentajeAsistencia + "%", 278, y);
+y += 6;
+});
+
+doc.save(`Informe_Mensual_${curso}_${fechaInicio}_${fechaFin}.pdf`);
+
+}
+
+function exportarMensualExcel(){
+if(!window.mensualActual){
+alert("Primero genera un informe mensual");
+return;
+}
+
+const {fechaInicio, fechaFin, curso, fechasUnicas, matrizAsistencia, estudiantesCurso} = window.mensualActual;
+
+// Crear libro de trabajo
+const wb = XLSX.utils.book_new();
+
+// Crear encabezados: Nombre, Curso, y luego todas las fechas
+const encabezados = ["Nombre", "Curso"];
+fechasUnicas.forEach(fecha => {
+encabezados.push(fecha);
+});
+
+const excelData = [encabezados];
+
+// Recorrer cada estudiante
+estudiantesCurso.forEach(est => {
+const fila = [est.nombre, est.curso];
+// Agregar el criterio de cada fecha
+fechasUnicas.forEach(fecha => {
+let criterio = matrizAsistencia[est.id].fechas[fecha];
+fila.push(criterio);
+});
+excelData.push(fila);
+});
+
+// Crear hoja de trabajo
+const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+// Ajustar ancho de columnas
+const colWidths = [
+{wch: 40}, // Nombre
+{wch: 10}  // Curso
+];
+// Agregar ancho para cada fecha
+fechasUnicas.forEach(() => {
+colWidths.push({wch: 12});
+});
+ws['!cols'] = colWidths;
+
+// Agregar hoja al libro
+XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+
+// Descargar archivo
+XLSX.writeFile(wb, `Asistencia_${curso}_${fechaInicio}_${fechaFin}.xlsx`);
+}
+
+// No cargar automáticamente, esperar login
+// cargar();
+
+async function abrirModalEdicion(estudianteId, nombreEstudiante){
+if(rolUsuario !== 'profesor'){
+alert("Solo los profesores pueden modificar la asistencia");
+return;
+}
+
+const {data} = await supabaseClient
+.from("asistencia")
+.select("*")
+.eq("estudiante_id", estudianteId)
+.order("fecha", {ascending: false});
+
+document.getElementById("edicion-titulo").textContent = `Editar Asistencia - ${nombreEstudiante}`;
+
+const contenidoDiv = document.getElementById("edicion-contenido");
+contenidoDiv.innerHTML = "";
+
+if(data.length === 0){
+contenidoDiv.innerHTML = "<p>No hay registros de asistencia para editar</p>";
+} else {
+data.forEach(registro => {
+let colorEstado = "";
+let textoEstado = "";
+if(registro.estado === "P") { colorEstado = "#34a853"; textoEstado = "Presente"; }
+if(registro.estado === "A") { colorEstado = "#fbbc05"; textoEstado = "Atraso"; }
+if(registro.estado === "L") { colorEstado = "#4285f4"; textoEstado = "Licencia"; }
+if(registro.estado === "F") { colorEstado = "#ea4335"; textoEstado = "Falta"; }
+
+const [year, month, day] = registro.fecha.split('-');
+const fechaFormateada = `${day}/${month}/${year}`;
+
+contenidoDiv.innerHTML += `
+<div class="historial-item" style="align-items:center;">
+<div>
+<strong>${fechaFormateada}</strong>
+<span class="estado-badge" style="background:${colorEstado};margin-left:10px;">${textoEstado}</span>
+</div>
+<div class="botones" style="margin:0;">
+<button class="P ${registro.estado === 'P' ? 'activo' : ''}" onclick="actualizarAsistencia(${registro.id}, 'P', ${estudianteId}, '${nombreEstudiante}')">P</button>
+<button class="A ${registro.estado === 'A' ? 'activo' : ''}" onclick="actualizarAsistencia(${registro.id}, 'A', ${estudianteId}, '${nombreEstudiante}')">A</button>
+<button class="L ${registro.estado === 'L' ? 'activo' : ''}" onclick="actualizarAsistencia(${registro.id}, 'L', ${estudianteId}, '${nombreEstudiante}')">L</button>
+<button class="F ${registro.estado === 'F' ? 'activo' : ''}" onclick="actualizarAsistencia(${registro.id}, 'F', ${estudianteId}, '${nombreEstudiante}')">F</button>
+</div>
+</div>
+`;
+});
+}
+
+document.getElementById("modal-edicion").style.display = "block";
+}
+
+async function actualizarAsistencia(registroId, nuevoEstado, estudianteId, nombreEstudiante){
+if(rolUsuario !== 'profesor'){
+alert("Solo los profesores pueden modificar la asistencia");
+return;
+}
+
+const {error} = await supabaseClient
+.from("asistencia")
+.update({estado: nuevoEstado})
+.eq("id", registroId);
+
+if(error){
+alert("Error al actualizar la asistencia");
+console.error(error);
+} else {
+// Recargar el modal para mostrar los cambios
+abrirModalEdicion(estudianteId, nombreEstudiante);
+}
+}
+
+function cerrarModalEdicion(){
+document.getElementById("modal-edicion").style.display = "none";
+}
+
+function generarListaOficial(curso){
+if(rolUsuario !== 'profesor' && rolUsuario !== 'asesor'){
+alert("No tienes permisos para ver la lista oficial");
+return;
+}
+
+// Filtrar estudiantes del curso
+const estudiantesCurso = estudiantes.filter(est => est.curso === curso).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+if(estudiantesCurso.length === 0){
+alert("No hay estudiantes en este curso");
+return;
+}
+
+// Generar PDF con jsPDF
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+// Título
+doc.setFontSize(18);
+doc.text("LISTA OFICIAL DE ESTUDIANTES", 105, 20, { align: 'center' });
+doc.setFontSize(14);
+doc.text(`SEXTO - CURSO ${curso}`, 105, 30, { align: 'center' });
+
+// Información adicional
+doc.setFontSize(10);
+const fechaActual = new Date().toLocaleDateString('es-ES');
+doc.text(`Fecha de emisión: ${fechaActual}`, 20, 40);
+doc.text(`Total de estudiantes: ${estudiantesCurso.length}`, 20, 46);
+
+// Línea separadora
+doc.setLineWidth(0.5);
+doc.line(20, 50, 190, 50);
+
+// Encabezados de tabla
+doc.setFontSize(11);
+doc.setFont(undefined, 'bold');
+let y = 58;
+doc.text("N°", 25, y, { align: 'center' });
+doc.text("NOMBRE COMPLETO", 60, y);
+doc.text("FIRMA", 160, y, { align: 'center' });
+
+// Línea debajo de encabezados
+doc.setLineWidth(0.3);
+doc.line(20, y + 2, 190, y + 2);
+
+// Lista de estudiantes
+doc.setFont(undefined, 'normal');
+doc.setFontSize(10);
+y += 10;
+
+estudiantesCurso.forEach((est, index) => {
+// Verificar si necesitamos una nueva página
+if(y > 270){
+doc.addPage();
+y = 20;
+// Repetir encabezados
+doc.setFont(undefined, 'bold');
+doc.setFontSize(11);
+doc.text("N°", 25, y, { align: 'center' });
+doc.text("NOMBRE COMPLETO", 60, y);
+doc.text("FIRMA", 160, y, { align: 'center' });
+doc.setLineWidth(0.3);
+doc.line(20, y + 2, 190, y + 2);
+doc.setFont(undefined, 'normal');
+doc.setFontSize(10);
+y += 10;
+}
+
+// Número
+doc.text((index + 1).toString(), 25, y, { align: 'center' });
+
+// Nombre
+doc.text(est.nombre, 40, y);
+
+// Línea para firma
+doc.setLineWidth(0.2);
+doc.line(145, y + 1, 185, y + 1);
+
+// Línea separadora entre estudiantes
+doc.setLineWidth(0.1);
+doc.line(20, y + 4, 190, y + 4);
+
+y += 10;
+});
+
+// Pie de página en la última página
+doc.setFontSize(8);
+doc.text("Este documento es una lista oficial de estudiantes del curso.", 105, 285, { align: 'center' });
+
+// Descargar PDF
+doc.save(`Lista_Oficial_Curso_${curso}.pdf`);
+}
+
+function mostrarFormAgregarEstudiante(){
+if(rolUsuario !== 'profesor'){
+alert("Solo los profesores pueden agregar estudiantes");
+return;
+}
+
+const contenedor = document.getElementById("contenedor-formulario-estudiante");
+contenedor.innerHTML = `
+<div class="form-estudiante">
+<h3>➕ Agregar Nuevo Estudiante</h3>
+<label>Nombre Completo:</label>
+<input type="text" id="nuevo-nombre-estudiante" placeholder="Ingrese el nombre completo">
+<label>Curso:</label>
+<select id="nuevo-curso-estudiante">
+<option value="">Seleccionar curso</option>
+<option value="A">CURSO A</option>
+<option value="B">CURSO B</option>
+<option value="C">CURSO C</option>
+</select>
+<div>
+<button class="btn-guardar-estudiante" onclick="agregarEstudiante()">💾 Guardar</button>
+<button class="btn-cancelar" onclick="cerrarFormularioEstudiante()">❌ Cancelar</button>
+</div>
+</div>
+`;
+}
+
+async function agregarEstudiante(){
+const nombre = document.getElementById("nuevo-nombre-estudiante").value.trim();
+const curso = document.getElementById("nuevo-curso-estudiante").value;
+
+if(!nombre){
+alert("Por favor ingresa el nombre del estudiante");
+return;
+}
+
+if(!curso){
+alert("Por favor selecciona un curso");
+return;
+}
+
+// Insertar en la base de datos
+const {data, error} = await supabaseClient
+.from("estudiantes")
+.insert({
+nombre: nombre,
+curso: curso
+});
+
+if(error){
+alert("Error al agregar el estudiante: " + error.message);
+console.error(error);
+} else {
+alert("Estudiante agregado exitosamente");
+// Recargar estudiantes
+await cargar();
+cerrarFormularioEstudiante();
+mostrarEstudiantes();
+}
+}
+
+function mostrarFormModificarEstudiante(){
+if(rolUsuario !== 'profesor'){
+alert("Solo los profesores pueden modificar estudiantes");
+return;
+}
+
+const estudiantesCurso = estudiantes.filter(est => est.curso === cursoActual).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+let html = `
+<div class="form-estudiante">
+<h3>✏️ Modificar Estudiante</h3>
+<p>Selecciona un estudiante para modificar:</p>
+<div class="lista-estudiantes-modificar">
+`;
+
+estudiantesCurso.forEach(est => {
+html += `
+<div class="item-estudiante-modificar" onclick="editarEstudiante(${est.id}, '${est.nombre.replace(/'/g, "\\'")}', '${est.curso}')">
+<span><strong>${est.nombre}</strong> - Curso ${est.curso}</span>
+<span>✏️</span>
+</div>
+`;
+});
+
+html += `
+</div>
+<button class="btn-cancelar" onclick="cerrarFormularioEstudiante()">❌ Cancelar</button>
+</div>
+`;
+
+const contenedor = document.getElementById("contenedor-formulario-estudiante");
+contenedor.innerHTML = html;
+}
+
+function editarEstudiante(id, nombreActual, cursoActual){
+const contenedor = document.getElementById("contenedor-formulario-estudiante");
+contenedor.innerHTML = `
+<div class="form-estudiante">
+<h3>✏️ Modificar Estudiante</h3>
+<label>Nombre Completo:</label>
+<input type="text" id="editar-nombre-estudiante" value="${nombreActual}">
+<label>Curso:</label>
+<select id="editar-curso-estudiante">
+<option value="A" ${cursoActual === 'A' ? 'selected' : ''}>CURSO A</option>
+<option value="B" ${cursoActual === 'B' ? 'selected' : ''}>CURSO B</option>
+<option value="C" ${cursoActual === 'C' ? 'selected' : ''}>CURSO C</option>
+</select>
+<div>
+<button class="btn-guardar-estudiante" onclick="guardarModificacionEstudiante(${id})">💾 Guardar Cambios</button>
+<button class="btn-cancelar" onclick="cerrarFormularioEstudiante()">❌ Cancelar</button>
+</div>
+</div>
+`;
+}
+
+async function guardarModificacionEstudiante(id){
+const nombre = document.getElementById("editar-nombre-estudiante").value.trim();
+const curso = document.getElementById("editar-curso-estudiante").value;
+
+if(!nombre){
+alert("Por favor ingresa el nombre del estudiante");
+return;
+}
+
+// Actualizar en la base de datos
+const {error} = await supabaseClient
+.from("estudiantes")
+.update({
+nombre: nombre,
+curso: curso
+})
+.eq("id", id);
+
+if(error){
+alert("Error al modificar el estudiante: " + error.message);
+console.error(error);
+} else {
+alert("Estudiante modificado exitosamente");
+// Recargar estudiantes
+await cargar();
+cerrarFormularioEstudiante();
+mostrarEstudiantes();
+}
+}
+
+function mostrarFormEliminarEstudiante(){
+if(rolUsuario !== 'profesor'){
+alert("Solo los profesores pueden eliminar estudiantes");
+return;
+}
+
+const estudiantesCurso = estudiantes.filter(est => est.curso === cursoActual).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+let html = `
+<div class="form-estudiante">
+<h3>🗑️ Eliminar Estudiante</h3>
+<p style="color:#f44336;font-weight:bold;">⚠️ ADVERTENCIA: Esta acción no se puede deshacer</p>
+<p>Selecciona un estudiante para eliminar:</p>
+<div class="lista-estudiantes-modificar">
+`;
+
+estudiantesCurso.forEach(est => {
+html += `
+<div class="item-estudiante-modificar" onclick="confirmarEliminarEstudiante(${est.id}, '${est.nombre.replace(/'/g, "\\'")}')">
+<span><strong>${est.nombre}</strong> - Curso ${est.curso}</span>
+<span>🗑️</span>
+</div>
+`;
+});
+
+html += `
+</div>
+<button class="btn-cancelar" onclick="cerrarFormularioEstudiante()">❌ Cancelar</button>
+</div>
+`;
+
+const contenedor = document.getElementById("contenedor-formulario-estudiante");
+contenedor.innerHTML = html;
+}
+
+async function confirmarEliminarEstudiante(id, nombre){
+const confirmacion = confirm(`¿Estás seguro de que deseas eliminar a ${nombre}?\n\nEsta acción eliminará también todos sus registros de asistencia y no se puede deshacer.`);
+
+if(!confirmacion){
+return;
+}
+
+// Primero eliminar registros de asistencia
+const {error: errorAsistencia} = await supabaseClient
+.from("asistencia")
+.delete()
+.eq("estudiante_id", id);
+
+if(errorAsistencia){
+alert("Error al eliminar registros de asistencia: " + errorAsistencia.message);
+console.error(errorAsistencia);
+return;
+}
+
+// Luego eliminar el estudiante
+const {error} = await supabaseClient
+.from("estudiantes")
+.delete()
+.eq("id", id);
+
+if(error){
+alert("Error al eliminar el estudiante: " + error.message);
+console.error(error);
+} else {
+alert("Estudiante eliminado exitosamente");
+// Recargar estudiantes
+await cargar();
+cerrarFormularioEstudiante();
+mostrarEstudiantes();
+}
+}
+
+function cerrarFormularioEstudiante(){
+const contenedor = document.getElementById("contenedor-formulario-estudiante");
+if(contenedor){
+contenedor.innerHTML = "";
+}
+}
+
+function cambiarModoTema(){
+if(rolUsuario !== 'profesor'){
+return;
+}
+
+const body = document.body;
+const btnModo = document.getElementById("btn-modo-tema");
+
+if(body.classList.contains('modo-noche')){
+// Cambiar a modo día
+body.classList.remove('modo-noche');
+btnModo.innerHTML = "🌙 Modo Noche";
+localStorage.setItem('modoTema', 'dia');
+} else {
+// Cambiar a modo noche
+body.classList.add('modo-noche');
+btnModo.innerHTML = "☀️ Modo Día";
+localStorage.setItem('modoTema', 'noche');
+}
+}
+
+// Cargar preferencia de tema al iniciar
+document.addEventListener('DOMContentLoaded', function(){
+const modoGuardado = localStorage.getItem('modoTema');
+if(modoGuardado === 'noche' && rolUsuario === 'profesor'){
+document.body.classList.add('modo-noche');
+const btnModo = document.getElementById("btn-modo-tema");
+if(btnModo){
+btnModo.innerHTML = "☀️ Modo Día";
+}
+}
+});
+
+</script>
+
+</body>
+</html>
